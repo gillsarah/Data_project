@@ -18,6 +18,8 @@ and then fit a simple model to it using Numpy or Statsmodels.
 #save df files before and after edits?
 #Organize! do fn make sense here? do classes?
 
+#need to move fn calls to end of file
+
 
 
 #outline: -don't forget to remove
@@ -137,6 +139,17 @@ def download_data(url, filename):
     
     with open(filename, open_as) as ofile:
         ofile.write(output)
+'''
+#notes from prof:
+def download_prof():
+    df1 = download_df1()
+
+    resutls = []
+    for d in [df2, df3, df4]:
+        df = download_oterwise(d)
+        results.append(d)
+    df = pd.concat(results)
+'''
 
 #call the funtion
 for url, filename in urls:
@@ -153,7 +166,7 @@ def read_data(path, filename):
     #df.dropna(axis=1,inplace=True) #drop empty columns 
     return df
 #for some reason dropping na in this step dropps the Community Area Name col!!!???
-def help():
+def help1_resolved():
     'for some reason dropna is dropping non-empty cols'
     'I think it might drop if any NA not just if all NA!'
     'Neer mind, fixed it in the merge step!'
@@ -161,6 +174,49 @@ def help():
    # all_files = [os.path.join(path, f) for f in os.listdir(os.path.expanduser(path)) 
     #            if f.endswith('.csv') | f.endswith('.xls')]
 
+
+def prof_help():
+    pass
+#parse before put in df_conents
+#read the data in and have a conditional if file name == this
+#here's some parseing
+# read in
+# parse
+# make a list 
+#fn to parse this df
+#in a loop wehre you know file name: if 
+def parse_death(death_df):
+    avg_an_death = death_df.pivot(index = 'Community Area Number', columns='Cause of Death', values='Average Annual Deaths 2006 - 2010')
+    avg_an_death.drop(0, axis = 0, inplace = True) #drop the Chicago Total
+    #do stuff
+    return avg_an_death
+def parse_healthcr(healthcr_df):
+    healthcr_df['count_of_health_crs'] = 1 
+    count_of_crs = healthcr_df.groupby('Community Areas').sum().reset_index()
+    #do stuff
+    return count_of_crs
+#the call
+parsing_fn = {'Chicago_Death.csv':parse_death,
+             'Chicago_health_cr.csv': parse_healthcr}
+
+for url, filename in urls:
+    df = read_data(b_path, filename)
+    if filename == 'Chicago_Death.csv':
+        parse_death(df)
+    elif filename == 'Chicago_health_cr.csv':
+        parse_healthcr(df)
+    else:
+        return df
+
+    
+
+
+    parsing_fn[filename](df) #calling a value from the dict, that value is a fn, call the fn
+
+parse_death #shows have an object, can call
+
+
+#don't
 #call the function
 #list of df names: currently not using this
 df_names = []
@@ -170,6 +226,8 @@ for url, filename in urls:
 df_contents = []
 for url, filename in urls:
     df_contents.append(read_data(b_path, filename))
+
+
 
 '''
 #drop na cols
@@ -206,8 +264,10 @@ healthcr_df.dropna(axis=1,inplace=True)
 
 
 #green_df: rename cols,  re-format Community Area Name colum (was Geo_Group)
+#I could skip rename if do merge on left... and rename perc green after merge
 green_df.rename(columns = {'Geo_ID':'Community Area Number', 
                             'Ave_Annual_Number': 'Ave_Annual_perc_green'}, inplace=True)
+#I could skip this step! Don't use this new col anymore!
 tempcol = green_df['Geo_Group'].str.split("-", expand = True)
 green_df['temp'] = tempcol[0]
 green_df['Community Area Name'] = tempcol[1]
@@ -215,23 +275,22 @@ green_df['Community Area Name'] = tempcol[1]
 #citation: https://www.geeksforgeeks.org/python-pandas-split-strings-into-two-list-columns-using-str-split/
 
 
+
+
 #death_df: rename cols, reshape, drop totals col 
-#death_df.shape #(1404, 17) -> ,9)
-#death_df.columns
+#I could skip rename if do merge on left...
 death_df.rename(columns = {'Community Area': 'Community Area Number'}, inplace=True)
-#death_df.index
 avg_an_death = death_df.pivot(index = 'Community Area Number', columns='Cause of Death', values='Average Annual Deaths 2006 - 2010')
 avg_an_death.drop(0, axis = 0, inplace = True) #drop the Chicago Total
 #avg_an_death.columns
 #avg_an_death.shape
-#avg_an_death.head()
 
 #healthcr_df: add count col
 #nieve fix for counting health centers per community area 
 healthcr_df['count_of_health_crs'] = 1 
-#healthcr_df.columns
 count_of_crs = healthcr_df.groupby('Community Areas').sum().reset_index()
 count_of_crs.columns
+
 
 #this way didn't work for my purposes, but I think it is the way to do it
 #get the count of how many health centers are in ea community area
@@ -240,7 +299,7 @@ count_of_crs.columns
 #cite https://datatofish.com/count-duplicates-pandas/
 #count_centers.dtypes
 
-def help2():
+def help_resolved():
     #when I merge by both: on=['Community Area Number', 'Community Area Name']
     #I loose 1 col and 5 crows
     #its bc formatting differnece!
@@ -317,42 +376,14 @@ use_df.rename(columns = {'PER CAPITA INCOME ': 'Per_Capita_Income', 'PERCENT HOU
 
 
 #Summary statistics
-#def summary_stats(df):
+def summary_stats(df):
+    pass
 
 #    return tempdf.groupby('COMMUNITY AREA NAME').mean()
 
-
+#'Ave_Annual_perc_green', 'HARDSHIP_INDEX', 'All_Causes'...
 #summary_stat_tab = summary_stats(use_df)
 
-
-green_df.groupby('Community Area Name').mean()
-green_df['Ave_Annual_perc_green'].max()
-green_df['Ave_Annual_perc_green'].min()
-green_df['Ave_Annual_perc_green'].var()
-
-SES_df.columns
-SES_df['HARDSHIP_INDEX'].mean()
-SES_df['HARDSHIP_INDEX'].max()
-SES_df['HARDSHIP_INDEX'].min()
-SES_df['HARDSHIP_INDEX'].var()
-
-#Avg deaths all causes
-avg_an_death['All_Causes'].mean()
-avg_an_death['All_Causes'].max()
-avg_an_death['All_Causes'].min()
-avg_an_death['All_Causes'].var()
-
-#suicide deaths 
-avg_an_death['Suicide'].mean()
-avg_an_death['Suicide'].max()
-avg_an_death['Suicide'].min()
-avg_an_death['Suicide'].var()
-
-#diabetse deaths
-avg_an_death['Diabetes_related'].mean()
-avg_an_death['Diabetes_related'].max()
-avg_an_death['Diabetes_related'].min()
-avg_an_death['Diabetes_related'].var()
 
 
 #Explore covariate relationships:
@@ -486,7 +517,7 @@ plt.show()
 
 #end above section 
 
-#this is very funny!
+#this is very funny! And I have no idea what it is doing
 plt.plot(use_df.Suicide, result.fittedvalues, 'r')
 #cite https://stackoverflow.com/questions/48682407/r-abline-equivalent-in-python
 
