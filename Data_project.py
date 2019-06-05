@@ -11,14 +11,13 @@ summarize the data with plots, tables and summary statistics,
 and then fit a simple model to it using Numpy or Statsmodels.
 '''
 
-#I got carried away.
 #need to:
-#make plots
-#make tables ???? summary statistics???
-#save df files before and after edits?
-#Organize! do fn make sense here? do classes?
+# make plots prettier???
+# move fn calls to end of file
+# output the final df
+# output plots
+# output tables?????
 
-#need to move fn calls to end of file
 
 
 
@@ -163,16 +162,7 @@ def read_data(path, filename):
         df = pd.read_excel(os.path.join(path, filename))
     else:
         return 'unexpected file type in read_data'
-    #df.dropna(axis=1,inplace=True) #drop empty columns 
     return df
-#for some reason dropping na in this step dropps the Community Area Name col!!!???
-def help1_resolved():
-    'for some reason dropna is dropping non-empty cols'
-    'I think it might drop if any NA not just if all NA!'
-    'Neer mind, fixed it in the merge step!'
-    pass
-   # all_files = [os.path.join(path, f) for f in os.listdir(os.path.expanduser(path)) 
-    #            if f.endswith('.csv') | f.endswith('.xls')]
 
 
 def prof_help():
@@ -185,37 +175,50 @@ def prof_help():
 # make a list 
 #fn to parse this df
 #in a loop wehre you know file name: if 
+
+#re-name community Area: for some reasion after pivot cant use Community Area to merge
+#but Community Area Name works
+
 def parse_death(death_df):
+    death_df.rename(columns = {'Community Area': 'Community Area Number'}, inplace=True)
     avg_an_death = death_df.pivot(index = 'Community Area Number', columns='Cause of Death', values='Average Annual Deaths 2006 - 2010')
     avg_an_death.drop(0, axis = 0, inplace = True) #drop the Chicago Total
-    #do stuff
     return avg_an_death
+
 def parse_healthcr(healthcr_df):
     healthcr_df['count_of_health_crs'] = 1 
     count_of_crs = healthcr_df.groupby('Community Areas').sum().reset_index()
-    #do stuff
     return count_of_crs
+
 #the call
 parsing_fn = {'Chicago_Death.csv':parse_death,
              'Chicago_health_cr.csv': parse_healthcr}
+#didn't use: could to re-org the call of read and parse
+#    parsing_fn[filename](df) #calling a value from the dict, that value is a fn, call the fn
+#parse_death #shows have an object, can call
 
+df_contents = []
 for url, filename in urls:
     df = read_data(b_path, filename)
     if filename == 'Chicago_Death.csv':
-        parse_death(df)
+        df_contents.append(parse_death(df))
     elif filename == 'Chicago_health_cr.csv':
-        parse_healthcr(df)
+        df_contents.append(parse_healthcr(df))
     else:
-        return df
+        df_contents.append(df)
 
-    
+'''
+df_contents[0].shape #78,9
+df_contents[1].shape #(77,27)
+df_contents[2].shape #77,18 #check
+df_contents[3].shape #47,7 #check
+df_contents[3].head()
+df_contents[3].columns
+df_contents[2].columns #same but odd!
+'''
 
 
-    parsing_fn[filename](df) #calling a value from the dict, that value is a fn, call the fn
-
-parse_death #shows have an object, can call
-
-
+'''
 #don't
 #call the function
 #list of df names: currently not using this
@@ -223,60 +226,26 @@ df_names = []
 for url, filename in urls:
     df_names.append(filename[:-4] + '_df') 
 
-df_contents = []
+df2_contents = []
 for url, filename in urls:
-    df_contents.append(read_data(b_path, filename))
+    df2_contents.append(read_data(b_path, filename))
 
-
+'''
 
 '''
 #drop na cols
 for df in df_contents:
     df.dropna(axis=1,inplace=True) #drop empty columns 
 '''  
-#I can't figure out how to read the df in with a nave an dthen also use that name
-#I could concatinate these list, but then how do I work with them?
-#bc I do have to do different things with each df
-
 #so I'm gona hard code for now
 
 #name the dfs
-SES_df = df_contents[0]
-green_df = df_contents[1]
-death_df = df_contents[2]
-healthcr_df = df_contents[3]
+#SES_df = df2_contents[0]
+#green_df = df2_contents[1]
+#death_df = df2_contents[2]
+#healthcr_df = df2_contents[3]
 
 '''
-SES_df.columns
-#droping na on SES drops the community area for some reason!
-green_df.columns
-green_df.dropna(axis=1,inplace=True)
-#fine
-death_df.columns
-death_df.dropna(axis=1,inplace=True)
-#fine
-healthcr_df.columns
-healthcr_df['Community Areas']
-healthcr_df['Community Area (#)']
-healthcr_df.dropna(axis=1,inplace=True)
-#lose Community Areas!
-'''
-
-
-#green_df: rename cols,  re-format Community Area Name colum (was Geo_Group)
-#I could skip rename if do merge on left... and rename perc green after merge
-green_df.rename(columns = {'Geo_ID':'Community Area Number', 
-                            'Ave_Annual_Number': 'Ave_Annual_perc_green'}, inplace=True)
-#I could skip this step! Don't use this new col anymore!
-tempcol = green_df['Geo_Group'].str.split("-", expand = True)
-green_df['temp'] = tempcol[0]
-green_df['Community Area Name'] = tempcol[1]
-#citation: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.str.split.html
-#citation: https://www.geeksforgeeks.org/python-pandas-split-strings-into-two-list-columns-using-str-split/
-
-
-
-
 #death_df: rename cols, reshape, drop totals col 
 #I could skip rename if do merge on left...
 death_df.rename(columns = {'Community Area': 'Community Area Number'}, inplace=True)
@@ -284,13 +253,12 @@ avg_an_death = death_df.pivot(index = 'Community Area Number', columns='Cause of
 avg_an_death.drop(0, axis = 0, inplace = True) #drop the Chicago Total
 #avg_an_death.columns
 #avg_an_death.shape
-
 #healthcr_df: add count col
 #nieve fix for counting health centers per community area 
 healthcr_df['count_of_health_crs'] = 1 
 count_of_crs = healthcr_df.groupby('Community Areas').sum().reset_index()
 count_of_crs.columns
-
+'''
 
 #this way didn't work for my purposes, but I think it is the way to do it
 #get the count of how many health centers are in ea community area
@@ -299,53 +267,36 @@ count_of_crs.columns
 #cite https://datatofish.com/count-duplicates-pandas/
 #count_centers.dtypes
 
-def help_resolved():
-    #when I merge by both: on=['Community Area Number', 'Community Area Name']
-    #I loose 1 col and 5 crows
-    #its bc formatting differnece!
-    pass
-    #green_df['Community Area Name'] == SES_df['Community Area Name']
-    #had to undue the rename! if want to work with it rename again
-
+#for some reason the merge between green and avg_an_death works if I re-name Community Area but not if I don't
 def merge_dfs(SES_df,green_df,avg_an_death,count_of_crs): 
-    #Merge datasets:
-    #nameing convention: he'll use descriptive names for interpediate steps
-    #then easy to use name for final df 
-    
-    SES_green = SES_df.merge(green_df, on='Community Area Number', how = 'inner')
-    #SES_green.shape
-    #SESdf.shape #lost one entry, totals
-    #green_df.shape #lost no entries
-    #SES_green.columns
+    #Merge datasets:    
+    SES_green = SES_df.merge(green_df, left_on='Community Area Number', right_on = 'Geo_ID', how = 'inner')
 
     SES_green_death = SES_green.merge(avg_an_death, on='Community Area Number', how = 'inner')
-    #SES_green_death.shape
-    #SES_green_death.columns
 
     SES_green_death_healthcr = SES_green_death.merge(count_of_crs, left_on='Community Area Number', right_on='Community Areas', how = 'outer')
-    #SES_green_death_healthcr.shape
-    #SES_green_death_healthcr['count_of_health_crs']
-    #SES_green_death_healthcr.columns
     #fill in Nan with 0 (bc if not in the previous database then doesn't have a health center)
     SES_green_death_healthcr['count_of_health_crs'].fillna(value = 0, inplace=True)
     #cite: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.fillna.html
     SES_green_death_healthcr.dropna(axis=1,inplace=True)
     
     #drop columns that do not provide useful information/may not apply to all entries in the row after 
-    # the merge (e.g. SubCategory or Map_Key from green_df), , or provides duplicate information but 
-    # with occasional fomatting differences ('Community Area Name')
-    SES_green_death_healthcr.drop(columns = ['Geo_Group', 'temp', 'Category', 'SubCategory',
-                                            'Geography', 'Map_Key', 'Community Area Name', ], inplace = True)
+    # the merge (e.g. SubCategory or Map_Key from green_df), or duplicates eg Geo_ID
+    SES_green_death_healthcr.drop(columns = ['Geo_Group', 'Geo_ID', 'Category', 'SubCategory',
+                                            'Geography', 'Map_Key'], inplace = True)
 
     return SES_green_death_healthcr 
 
-full_df = merge_dfs(SES_df,green_df,avg_an_death,count_of_crs)
+#old way
+#full_df = merge_dfs(SES_df,green_df,avg_an_death,count_of_crs)
+#new way
+full_df_2 = merge_dfs(df_contents[0], df_contents[1], df_contents[2], df_contents[3])
 #full_df.columns
-full_df.shape #(77,32) #38 when don't drop first
+#full_df.shape #(77,32) #38 when don't drop first #77,31? 
+full_df_2.shape #77,31 same as most recent run of other method
 
-
-#reduce number of cols, drop ones outside of investigation
-use_df = full_df.drop(columns = ['PERCENT OF HOUSING CROWDED',  'PERCENT AGED 16+ UNEMPLOYED',
+#reduce number of cols for convinience, drop ones outside of investigation
+use_df = full_df_2.drop(columns = ['PERCENT OF HOUSING CROWDED',  'PERCENT AGED 16+ UNEMPLOYED',
                         'PERCENT AGED 25+ WITHOUT HIGH SCHOOL DIPLOMA', 'PERCENT AGED UNDER 18 OR OVER 64', 
                         'Year','Injury, unintentional', 'All causes in females', 'All causes in males', 
                         'Alzheimers disease', 'Assault (homicide)', 'Breast cancer in females', 'Cancer (all sites)', 
@@ -353,23 +304,19 @@ use_df = full_df.drop(columns = ['PERCENT OF HOUSING CROWDED',  'PERCENT AGED 16
                         'Kidney disease (nephritis, nephrotic syndrome and nephrosis)', 'Liver disease and cirrhosis', 
                         'Lung cancer','Indicator'])
 
+
 #use_df.columns
-
-'''
-SES_green_death_healthcr['COMMUNITY AREA NAME'][5]
-SES_green_death_healthcr['Community Area Name'][5]
-print(SES_green_death_healthcr['COMMUNITY AREA NAME'][75])
-print(SES_green_death_healthcr['Community Area Name'][75])
-print(SES_green_death_healthcr['COMMUNITY AREA NAME'][72])
-print(SES_green_death_healthcr['Community Area Name'][72])
-
-temp_list = []
-for i in range(len(SES_green_death_healthcr['COMMUNITY AREA NAME'])):
-    temp_list.append(SES_green_death_healthcr['COMMUNITY AREA NAME'][i] == SES_green_death_healthcr['Community Area Name'][i])
-'''
+def re_name(use_df):
+    use_df.rename(...)
+    col_name.title()
+    col_name.replace(" ", "_")
+    #make cammal case and _
+    #if () cutt after(
+    pass
+#cite https://stackoverflow.com/questions/8347048/how-to-convert-string-to-title-case-in-python
 
 #remane for use in ols
-use_df.rename(columns = {'PER CAPITA INCOME ': 'Per_Capita_Income', 'PERCENT HOUSEHOLDS BELOW POVERTY':'Perc_Households_Below_Poverty', 
+use_df.rename(columns = {'Ave_Annual_Number': 'Ave_Annual_perc_green', 'PER CAPITA INCOME ': 'Per_Capita_Income', 'PERCENT HOUSEHOLDS BELOW POVERTY':'Perc_Households_Below_Poverty', 
                         'HARDSHIP INDEX':'HARDSHIP_INDEX','Suicide (intentional self-harm)':'Suicide', 
                         'Diabetes-related':'Diabetes_related', 'Stroke (cerebrovascular disease)': 'Stroke',
                         'Coronary heart disease': 'Coronary_heart_disease', 'COMMUNITY AREA NAME':'Community Area Name'}, inplace=True) 
@@ -377,14 +324,69 @@ use_df.rename(columns = {'PER CAPITA INCOME ': 'Per_Capita_Income', 'PERCENT HOU
 
 #Summary statistics
 def summary_stats(df):
-    pass
-
+    summary = df.describe()
+    summary.drop(columns = ['Community Area Number'], inplace = True)
+    summary = summary.transpose()
+    return summary
+#cite https://stackoverflow.com/questions/33889310/r-summary-equivalent-in-numpy 
+#50% have 0 green. 75 percentile is <1
+#call
+summary_stats(use_df)
 #    return tempdf.groupby('COMMUNITY AREA NAME').mean()
 
 #'Ave_Annual_perc_green', 'HARDSHIP_INDEX', 'All_Causes'...
 #summary_stat_tab = summary_stats(use_df)
 
+#where is the most greenspace?
+def max_green(use_df):
+    i = np.argmax(use_df['Ave_Annual_perc_green'])
+    max_green = use_df.iloc[i]
+    return max_green
 
+def min_green(use_df):
+    min_green_list = []
+    for i in range(len(use_df['Ave_Annual_perc_green'])):
+        if use_df['Ave_Annual_perc_green'][i] == 0:
+            min_green_list.append(i)
+        else:
+            pass
+    for j in min_green_list:
+        return use_df.iloc[j]
+
+#cite https://stackoverflow.com/questions/2474015/getting-the-index-of-the-returned-max-or-min-item-using-max-min-on-a-list
+
+#analysis
+def ols(use_df):
+    ys = ['Stroke', 'Coronary_heart_disease', 'Diabetes_related', 'Suicide']
+    for i in ys:
+        print('Independent Variable: ' + i)
+        m = smf.ols(i + '~ Ave_Annual_perc_green + HARDSHIP_INDEX + count_of_health_crs' , data = use_df)
+        result = m.fit()
+        print(result.summary())
+        print( )
+
+
+#Limitations in variation in greenspace (nearly half of the dataset is at 0 avg an perc green!)
+#look at a restricted sample, exclude 0 values.
+some_green = use_df['Ave_Annual_perc_green'] != 0
+some_green_df = use_df[some_green]
+
+zero_green = use_df['Ave_Annual_perc_green'] == 0
+zero_green_df = use_df[zero_green]
+#cite https://chrisalbon.com/python/data_wrangling/pandas_selecting_rows_on_conditions/
+
+#call
+ols(use_df)
+ols(some_green_df)
+
+#even more sig if exclude 0s
+#call
+summary_stats(some_green_df)
+
+
+
+#lets see if health centers help explain diabetese deaths 
+#odd, maybe just the presence of a health center isn't enough to help
 
 #Explore covariate relationships:
 
@@ -404,16 +406,6 @@ result = test_model.fit()
 result.summary()
 #yup
 
-#where is the most greenspace?
-np.argmax(use_df['Ave_Annual_perc_green'])
-#cite https://stackoverflow.com/questions/2474015/getting-the-index-of-the-returned-max-or-min-item-using-max-min-on-a-list
-use_df.iloc[11]
-
-#the least?
-np.argmin(use_df['Ave_Annual_perc_green'])
-use_df.iloc[1]
-
-
 #lets take a look
 plt.plot(use_df['HARDSHIP_INDEX'], use_df['Ave_Annual_perc_green'], 'o')
 #cite: https://jakevdp.github.io/PythonDataScienceHandbook/04.02-simple-scatter-plots.html
@@ -425,7 +417,7 @@ plt.plot(use_df['HARDSHIP_INDEX'], np.log(use_df['Ave_Annual_perc_green']), 'o')
 
 
 #I wonder if there's a relxn between suicide and greenspace, probably not but...
-plt.plot(use_df['HARDSHIP_INDEX'], avg_an_death['Suicide'], 'o')
+plt.plot(use_df['HARDSHIP_INDEX'], use_df['Suicide'], 'o')
 plt.show()
 #hmm, neg rlxn betw hardship and suicide
 #lets see if significant:
@@ -434,8 +426,18 @@ model = smf.ols('Suicide ~ HARDSHIP_INDEX + Ave_Annual_perc_green' , data=use_df
 result = model.fit()
 result.summary()
 
-plt.plot(use_df['Ave_Annual_perc_green'], avg_an_death['Suicide'], 'o')
+plt.plot(use_df['Ave_Annual_perc_green'], use_df['Suicide'], 'o')
 plt.show()
+
+#try a bar
+#re-shape df index as perc green
+temp_df = some_green_df.set_index('Ave_Annual_perc_green')
+temp_df.head()
+
+temp_df['Suicide'].plot(kind='bar', subplots=True, figsize=(10,10))
+plt.show()
+#ok, works, but not informative (would need to put a lot of work in)
+#maybe better spent making scatters pretty
 
 model = smf.ols('Suicide ~ Ave_Annual_perc_green' , data=use_df)
 result = model.fit().params
@@ -453,6 +455,7 @@ def plot_model():
     pass
 
 import seaborn as sns
+import matplotlib.ticker as ticker
 
 sns.regplot(x='Ave_Annual_perc_green', y='Suicide', data=use_df)
 fig, ax = sns.regplot(x='Ave_Annual_perc_green', y='Coronary_heart_disease', data=use_df)
@@ -460,6 +463,7 @@ ax.set_ylabel('Average Anual Deaths by Stroke')
 ax.set_xlabel('Avearge Anuall Percent of Area that is Green (Log-scale)')
 plt.show()
 
+sns.regplot(x='Ave_Annual_perc_green', y='Suicide', data=some_green_df)
 #cite for plot regn
 #https://stackoverflow.com/questions/42261976/how-to-plot-statsmodels-linear-regression-ols-cleanly
 
@@ -486,7 +490,7 @@ ax.set_ylabel('Average Anual Deaths by Suicide')
 ax.set_xlabel('Avearge Anuall Percent of Area that is Green (Log-scale)')
 plt.show()
 
-#another way to try
+#another way to try: does not work!
 model = smf.ols('Suicide ~ Ave_Annual_perc_green' , data=use_df)
 result = model.fit()
 
@@ -524,6 +528,7 @@ plt.plot(use_df.Suicide, result.fittedvalues, 'r')
 def plot():
     pass 
 
+
 #best yet, other attempts below
 fig, ax = plt.subplots()
 ax.plot(use_df['Ave_Annual_perc_green'], use_df['Suicide'],'o')
@@ -532,7 +537,7 @@ ax.set_ylabel('Average Anual Suicide Rate')
 ax.set_xlabel('Avearge Anuall Percent of Area that is Green (Log-scale)')
 plt.show()
 #cite https://stackoverflow.com/questions/16904755/logscale-plots-with-zero-values-in-matplotlib
-import matplotlib.ticker as ticker
+
 fig, ax = plt.subplots()
 ax.plot(use_df['Ave_Annual_perc_green'], use_df['Diabetes_related'],'o')
 ax.set_xscale('symlog')
@@ -577,32 +582,94 @@ ax.set_xlabel('Avearge Anuall Percent of Area that is Green (Log-scale)')
 plt.show()
 
 
-zero_green = use_df['Ave_Annual_perc_green'] == 0
-zero_green_df = use_df[zero_green]
-#cite https://chrisalbon.com/python/data_wrangling/pandas_selecting_rows_on_conditions/
 
 
 #work on the plot: #doesn't look like 77 values! Am I loseing the 0 values?
 #want to make another plot over this one with the 0s?
 #want to resize the points for income
+def this_plot():
+    pass
 x = use_df['Ave_Annual_perc_green']
 y = use_df['Suicide']
 z = use_df['Community Area Name']
 s = use_df['Per_Capita_Income']
-fig, ax = plt.subplots()
-ax.plot(zero_green_df['Ave_Annual_perc_green'], zero_green_df['Suicide'], 'o' )
-ax.semilogx(x, y,'o')
+a_list = use_df['Per_Capita_Income']/1000
+         
 
+#yah!
+ax = use_df.plot(kind='scatter', x='Ave_Annual_perc_green', y='Suicide', s = a_list, label = 'Income')
+#cite https://github.com/pandas-dev/pandas/issues/16827
+#ax.plot(use_df['Ave_Annual_perc_green'], use_df['Suicide'], 'o' )
+#ax.semilogx(x, y,'o')
+ax.legend()
 ax.set_ylabel('Average Anual Suicide Rate')
 ax.set_xlabel('Avearge Anuall Percent of Area that is Green (Log-scale)')
-#cite https://matplotlib.org/examples/pylab_examples/log_demo.html
-#lable each point with Community Area Name
-for i, txt in enumerate(z):
+#cite https://matplotlib.org/examples/pylab_examples/log_demo.html (not longre useing)
+#lable point with Community Area Name, only if enough green (for viewability)
+
+for i, txt in enumerate(z): 
+    if x[i] >= 2:
+        ax.annotate(txt, (x[i], y[i]), horizontalalignment='center', verticalalignment='bottom')
+    else:
+        pass
+#cite: https://stackoverflow.com/questions/14432557/matplotlib-scatter-plot-with-different-text-at-each-data-point
+#https://matplotlib.org/3.1.0/gallery/text_labels_and_annotations/annotation_demo.html
+plt.show()
+
+zero_green = use_df['Ave_Annual_perc_green'] == 0
+zero_green_df = use_df[zero_green]
+#cite https://chrisalbon.com/python/data_wrangling/pandas_selecting_rows_on_conditions/
+
+#When you restrict sample to low greenspace, get slight upward curve 
+
+low_green = use_df['Ave_Annual_perc_green'] <=2
+low_green_df = use_df[low_green]
+
+
+z2 = use_df['Community Area Name']
+a_list2 = some_green_df['Per_Capita_Income']/1000
+
+ax = some_green_df.plot(kind='scatter', x= 'Ave_Annual_perc_green', y= 'Suicide', s = a_list2, label = 'Income')
+#cite https://github.com/pandas-dev/pandas/issues/16827
+#ax.plot(use_df['Ave_Annual_perc_green'], use_df['Suicide'], 'o' )
+#ax.semilogx(x, y,'o')
+ax.legend()
+ax.set_ylabel('Average Anual Suicide Rate')
+ax.set_xlabel('Percent of Area that is Green')
+#cite https://matplotlib.org/examples/pylab_examples/log_demo.html (not longre useing)
+#lable point with Community Area Name, only if enough green (for viewability)
+
+for i, txt in enumerate(z2): 
     ax.annotate(txt, (x[i], y[i]), horizontalalignment='center', verticalalignment='bottom')
 #cite: https://stackoverflow.com/questions/14432557/matplotlib-scatter-plot-with-different-text-at-each-data-point
 #https://matplotlib.org/3.1.0/gallery/text_labels_and_annotations/annotation_demo.html
 plt.show()
 
+sns.regplot(low_green_df['Ave_Annual_perc_green'], low_green_df['Coronary_heart_disease'],'o')
+sns.regplot(low_green_df['Ave_Annual_perc_green'], low_green_df['Suicide'],'o')
+sns.regplot(use_df['Ave_Annual_perc_green'], use_df['Suicide'],'o')
+
+#whoops, copy paste and got rid of z1 and list1
+ax = low_green_df.plot(kind='scatter', x= 'Ave_Annual_perc_green', y= 'Suicide', s = a_list1, label = 'Income')
+#cite https://github.com/pandas-dev/pandas/issues/16827
+#ax.plot(use_df['Ave_Annual_perc_green'], use_df['Suicide'], 'o' )
+#ax.semilogx(x, y,'o')
+ax.legend()
+ax.set_ylabel('Average Anual Suicide Rate')
+ax.set_xlabel('Percent of Area that is Green (Avearge Anual)')
+#cite https://matplotlib.org/examples/pylab_examples/log_demo.html (not longre useing)
+#lable point with Community Area Name, only if enough green (for viewability)
+
+for i, txt in enumerate(z1): 
+    ax.annotate(txt, (x[i], y[i]), horizontalalignment='center', verticalalignment='bottom')
+#cite: https://stackoverflow.com/questions/14432557/matplotlib-scatter-plot-with-different-text-at-each-data-point
+#https://matplotlib.org/3.1.0/gallery/text_labels_and_annotations/annotation_demo.html
+plt.show()
+
+#use size
+a_list = use_df['HARDSHIP_INDEX']
+use_df.plot(kind='scatter', x='Ave_Annual_perc_green', y='Suicide', s = a_list )         
+plt.show()
 
 fig, ax = plt.subplots()
 ax.plot(use_df['Per_Capita_Income'], use_df['Suicide'], 'o')
@@ -623,17 +690,6 @@ plt.show()
 '''
 
 
-#lets look at some other causes of death, I expect related to SES
-plt.plot(SES_green_death_healthcr['HARDSHIP_INDEX'], avg_an_death['Diabetes_related'], 'o')
-plt.show()
-#does not look related, which is a big surprise
-model = smf.ols('Diabetes_related ~ HARDSHIP_INDEX + Ave_Annual_perc_green' , data=SES_green_death_healthcr)
-result = model.fit()
-result.summary()
-#something is off, expect SES to be predictive of diabetese deaths
-model = smf.ols('Diabetes_related ~ Per_Capita_Income + Ave_Annual_perc_green' , data=use_df)
-result = model.fit()
-result.summary()
 
 model = smf.ols('Diabetes_related ~ Per_Capita_Income' , data=use_df)
 result = model.fit()
@@ -654,16 +710,7 @@ result.summary()
 #nope no relationship, good news
 
 
-#adding into model
-model = smf.ols('Suicide ~ HARDSHIP_INDEX + Ave_Annual_perc_green + count_of_health_crs' , data=SES_green_death_healthcr)
-result = model.fit()
-result.summary()
 
-#lets see if health centers help explain diabetese deaths 
-model = smf.ols('Diabetes_related ~ HARDSHIP_INDEX + Ave_Annual_perc_green + count_of_health_crs' , data=SES_green_death_healthcr)
-result = model.fit()
-result.summary()
-#odd, maybe just the presence of a health center isn't enough to help
 
 
 
