@@ -245,11 +245,15 @@ def summary_stats(df):
     return summary
 #cite https://stackoverflow.com/questions/33889310/r-summary-equivalent-in-numpy 
 
-#50 percentile have 0 green. 75 percentile is <1
-#call
-summary_stats(use_df)
-summary_stats(some_green_df)
 
+#Limitations in variation in greenspace (nearly half of the dataset is at 0 avg an perc green!)
+#look at a restricted sample, exclude 0 values.
+some_green = use_df['Ave_Annual_Perc_Green'] != 0
+some_green_df = use_df[some_green]
+
+zero_green = use_df['Ave_Annual_Perc_Green'] == 0
+zero_green_df = use_df[zero_green]
+#cite https://chrisalbon.com/python/data_wrangling/pandas_selecting_rows_on_conditions/
 
 #where is the most greenspace?
 def max_green(use_df):
@@ -280,14 +284,6 @@ def ols(use_df):
         print( )
 
 
-#Limitations in variation in greenspace (nearly half of the dataset is at 0 avg an perc green!)
-#look at a restricted sample, exclude 0 values.
-some_green = use_df['Ave_Annual_Perc_Green'] != 0
-some_green_df = use_df[some_green]
-
-zero_green = use_df['Ave_Annual_Perc_Green'] == 0
-zero_green_df = use_df[zero_green]
-#cite https://chrisalbon.com/python/data_wrangling/pandas_selecting_rows_on_conditions/
 
 #call
 ols(use_df)
@@ -313,10 +309,6 @@ def covt_check(df, y_string, x_string):
     print(result.summary())
     print( )
 
-#call
-covariate_check_list = [('Hardship_Index', 'Ave_Annual_Perc_Green'), ('Perc_Households_Below_Poverty', 'Hardship_Index')]
-for i, j in covariate_check_list:
-    covt_check(use_df, i, j)
 
 
 
@@ -339,38 +331,14 @@ def covt_plots(df,y00,x00,y01,x01,y10,x10,y11,x11):
     ax[1][1].set_xlabel(x11)
     plt.show()
 
-#fig, ax = plt.subplots(ncols = 2,nrows = 2, sharex=False)
-fig, ax = plt.subplots(2,2, figsize= (10,8))
-plt.tight_layout(pad= 4, w_pad=4, h_pad=4)
-ax[0][0].plot(use_df['Hardship_Index'], use_df['Ave_Annual_Perc_Green'], 'o')
-ax[0][0].set_title('test')
-#ax[0].set_ylabel('y')
-#ax[0].set_xlabel('Cant see it')
-ax[0][1].plot(use_df['Hardship_Index'], use_df['Suicide'], 'o')
-ax[0][1].set_ylabel('y')
-ax[0][1].set_xlabel('Cant see it')
-ax[1][0].plot(use_df['Hardship_Index'], use_df['Ave_Annual_Perc_Green'], 'o')
-#ax[2].set_ylabel('y')
-#ax[2].set_xlabel('Cant see it')
-ax[1][1].plot(use_df['Hardship_Index'], use_df['Suicide'], 'o')
-ax[1][1].set_title('test')
-#ax[3].set_ylabel('y')
-#ax[3].set_xlabel('Cant see it')
-
-plt.show()
-
-#to flatten:
-falt_list = [item for sublist in l for item in sublist]
-#l is the output from numpy
-# l has to do with teh axis in teh list of plots
-# flattedn from [[1,2], 
-#               [3,4]] 
+#cite https://matplotlib.org/users/tight_layout_guide.html
+#cite: https://jakevdp.github.io/PythonDataScienceHandbook/04.02-simple-scatter-plots.html
 
 #call
-covt_plots(use_df,'Hardship_Index', 'Ave_Annual_Perc_Green','Hardship_Index', 'Suicide', 'Suicide','Ave_Annual_Perc_Green','Ave_Annual_Perc_Green','Hardship_Index')
+
 
 plt.plot(use_df['Hardship_Index'], use_df['Ave_Annual_Perc_Green'], 'o')
-#cite: https://jakevdp.github.io/PythonDataScienceHandbook/04.02-simple-scatter-plots.html
+
 
 #oh! almost all very near 0 and then big values at all levels
 plt.plot(use_df['Hardship_Index'], np.log(use_df['Ave_Annual_Perc_Green']), 'o')
@@ -456,8 +424,8 @@ ax.set_xlabel('Avearge Anuall Percent of Area that is Green (Log-scale)')
 plt.show()
 
 
-
-def plot():
+#cutt
+def log_plot():
     pass 
 
 
@@ -511,57 +479,38 @@ ax.spines['top'].set_visible(False)
 plt.show()
 
 #want to resize the points for income
-def this_plot():
-    pass
-x = use_df['Ave_Annual_Perc_Green']
-y = use_df['Suicide']
-z = use_df['Community_Area_Name']
-s = use_df['Per_Capita_Income']
-a_list = use_df['Per_Capita_Income']/1000
-         
-#yah!
-ax = use_df.plot(kind='scatter', x='Ave_Annual_Perc_Green', y='Suicide', s = a_list)
-#cite https://github.com/pandas-dev/pandas/issues/16827
-#ax.plot(use_df['Ave_Annual_Perc_Green'], use_df['Suicide'], 'o' )
-#ax.semilogx(x, y,'o')
-#ax.legend()
-ax.set_ylabel('Average Anual Suicide Rate')
-ax.set_xlabel('Avearge Anuall Percent of Area that is Green')
-#cite https://matplotlib.org/examples/pylab_examples/log_demo.html (not longre useing)
-#lable point with Community_Area_Name, only if enough green (for viewability)
+def this_plot(df, y):
+    x = 'Ave_Annual_Perc_Green'
+    z = df['Community_Area_Name']
+    a_list = df['Per_Capita_Income']/1000
+    ax = df.plot(kind='scatter', x=x, y= y , s = a_list)
+    #cite https://github.com/pandas-dev/pandas/issues/16827
+    ax.set_ylabel('Average Anual Deaths by ' + y)
+    ax.set_xlabel('Percent of Area that is Green')
+    #cite https://matplotlib.org/examples/pylab_examples/log_demo.html (not longre useing)
+    #lable point with Community_Area_Name, only if enough green (for viewability)
+    for i, txt in enumerate(z): 
+        if df[x][i] >= 2:
+            ax.annotate(txt, (df[x][i], df[y][i]), horizontalalignment='center', verticalalignment='bottom')
+        else:
+            pass
+    #cite: https://stackoverflow.com/questions/14432557/matplotlib-scatter-plot-with-different-text-at-each-data-point
+    #https://matplotlib.org/3.1.0/gallery/text_labels_and_annotations/annotation_demo.html
+    #remove spines
+    ax.spines['right'].set_visible(False) 
+    ax.spines['top'].set_visible(False)
+    # Make a legend for per-capita income
+    for a_list in [10, 20, 30]:
+        plt.scatter([], [], c='k', alpha=0.3, s=a_list,
+                    label=str(a_list) + 'k')
+    plt.legend(scatterpoints=1, frameon=False, labelspacing=1, title='Per-Capita Income')
+    #cite https://jakevdp.github.io/PythonDataScienceHandbook/04.06-customizing-legends.html
+    plt.show()
+    #ok to hard code can pas in the [.,.,.] too
 
-for i, txt in enumerate(z): 
-    if x[i] >= 2:
-        ax.annotate(txt, (x[i], y[i]), horizontalalignment='center', verticalalignment='bottom')
-    else:
-        pass
-#cite: https://stackoverflow.com/questions/14432557/matplotlib-scatter-plot-with-different-text-at-each-data-point
-#https://matplotlib.org/3.1.0/gallery/text_labels_and_annotations/annotation_demo.html
-ax.spines['right'].set_visible(False) #remove spines
-ax.spines['top'].set_visible(False)
-# Here we create a legend:
-# we'll plot empty lists with the desired size and label
-
-#ppws = (pd.cut(a_list, bins=4, retbins=True)[1]).round(0)
-#for pw in pws:
- #   plt.scatter([], [], s=pw, c="k",label=str(pw))
-for a_list in [10, 20, 30]:
-   plt.scatter([], [], c='k', alpha=0.3, s=a_list,
-            label=str(a_list) + 'k')
-plt.legend(scatterpoints=1, frameon=False, labelspacing=1, title='Income')
-#cite https://jakevdp.github.io/PythonDataScienceHandbook/04.06-customizing-legends.html
-plt.show()
-#ok to hard code can pas in the [.,.,.] too
-
-# Make a legend for popdensity. Hand-wavy. Error prone!
-pws = (pd.cut(use_df['Per_Capita_Income'], bins=4, retbins=True)[1]).round(0)
-for pw in pws:
-    plt.scatter([], [], s=(pw**2)/2e4, c="k",label=str(pw))
-
-h, l = plt.gca().get_legend_handles_labels()
-plt.legend(h[5:], l[5:], labelspacing=1.2, title="popdensity", borderpad=1, 
-            frameon=True, framealpha=0.9, loc=4, numpoints=1)
-#cite: https://github.com/pandas-dev/pandas/issues/16827 
+#call
+this_plot(some_green_df, 'Suicide')
+this_plot(use_df, 'Suicide')
 
 
 
@@ -574,10 +523,14 @@ plt.legend(h[5:], l[5:], labelspacing=1.2, title="popdensity", borderpad=1,
 low_green = use_df['Ave_Annual_Perc_Green'] <=2
 low_green_df = use_df[low_green]
 
-
-z2 = use_df['Community_Area_Name']
+some_green_df['Ave_Annual_Perc_Green']
+some_green_df.reset_index(inplace = True)
+x = some_green_df['Ave_Annual_Perc_Green']
+y = some_green_df['Suicide']
+z2 = some_green_df['Community_Area_Name']
 a_list2 = some_green_df['Per_Capita_Income']/1000
 
+#in the fn
 ax = some_green_df.plot(kind='scatter', x= 'Ave_Annual_Perc_Green', y= 'Suicide', s = a_list2, label = 'Income')
 #cite https://github.com/pandas-dev/pandas/issues/16827
 #ax.plot(use_df['Ave_Annual_Perc_Green'], use_df['Suicide'], 'o' )
@@ -588,6 +541,7 @@ ax.set_xlabel('Percent of Area that is Green')
 #cite https://matplotlib.org/examples/pylab_examples/log_demo.html (not longre useing)
 #lable point with Community_Area_Name, only if enough green (for viewability)
 for i, txt in enumerate(z2): 
+    print(i,txt)
     if x[i] >= 2:
         ax.annotate(txt, (x[i], y[i]), horizontalalignment='center', verticalalignment='bottom')
     else:
@@ -599,13 +553,38 @@ ax.spines['top'].set_visible(False)
 plt.show()
 
 
+def output():
+    #save final dfs
+    #save plots
+    pass
+    
 
 
 
 def main():
     #run the functions
-    ols(use_df)
+    #50 percentile have 0 green. 75 percentile is <1
+    print('Summary statistics for full sample')
+    print(summary_stats(use_df))
+    print( )
+    print('Summary statistics for constricted sample (omit zero percent green)')
+    print(summary_stats(some_green_df))
+    print( )
 
+def temporary():   
+    ols(use_df)
+    ols(some_green_df)
+    #call
+    covariate_check_list = [('Hardship_Index', 'Ave_Annual_Perc_Green'), ('Perc_Households_Below_Poverty', 'Hardship_Index')]
+    for i, j in covariate_check_list:
+        covt_check(use_df, i, j)   
+    covariate_check_list = [('Hardship_Index', 'Ave_Annual_Perc_Green'), ('Perc_Households_Below_Poverty', 'Hardship_Index')]
+    for i, j in covariate_check_list:
+        covt_check(some_green_df, i, j)  
+    covt_plots(use_df,'Hardship_Index', 'Ave_Annual_Perc_Green','Hardship_Index', 'All_Causes',\
+                     'Hardship_Index','Count_Of_Health_Crs','Count_Of_Health_Crs','All_Causes')
+    covt_plots(some_green_df,'Hardship_Index', 'Ave_Annual_Perc_Green', 'All_Causes','Hardship_Index',\
+                     'Hardship_Index','Count_Of_Health_Crs','All_Causes','Count_Of_Health_Crs')
 
 
 
